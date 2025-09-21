@@ -3,41 +3,36 @@ body {
     padding: 0;
     font-family: Arial, sans-serif;
     display: flex;
-    background-color: #222; /* Tmavé pozadí pro celou stránku */
-    color: #eee; /* Světlé písmo pro celou stránku */
+    background-color: #222;
+    color: #eee;
 }
 
-/* Kontejner pro celou stránku */
 .container {
     display: flex;
     width: 100%;
     height: 100vh;
 }
 
-/* Styly pro mapový prvek */
 #map {
     height: 100%;
     width: 75%;
 }
 
-/* Styly pro postranní panel */
 #sidebar {
     height: 100%;
     width: 25%;
     padding: 20px;
-    background-color: #333; /* Tmavé pozadí pro sidebar */
+    background-color: #333;
     overflow-y: auto;
     box-sizing: border-box;
-    border-left: 1px solid #444; /* Jemný oddělovač */
+    border-left: 1px solid #444;
 }
 
-/* Nadpisy */
 #sidebar h2 {
     margin-top: 0;
-    color: #fff; /* Světlá barva pro nadpis */
+    color: #fff;
 }
 
-/* Styly pro filtry, řazení a vyhledávání */
 .filters,
 .sort-controls,
 .search-box {
@@ -47,7 +42,6 @@ body {
     border-radius: 5px;
 }
 
-/* Tlačítka */
 button {
     background-color: #555;
     color: #fff;
@@ -68,7 +62,6 @@ button:disabled {
     color: #999;
 }
 
-/* Vstupní pole a select */
 input[type="text"],
 select {
     width: 100%;
@@ -80,13 +73,11 @@ select {
     color: #eee;
 }
 
-/* Popisky (label) */
 label {
     color: #bbb;
     font-size: 14px;
 }
 
-/* Styly pro seznam míst */
 #location-list {
     list-style-type: none;
     padding: 0;
@@ -104,8 +95,11 @@ label {
     background-color: #555;
 }
 
-/* Instrukce pro uživatele */
+.respawn-ready {
+    background-color: #2e7d32; /* Tmavě zelené pozadí pro dokončený respawn */
+}
+
 #instruction {
     font-style: italic;
-    color: #aaa !important; /* Důležité, aby se přepsala výchozí barva */
+    color: #aaa !important;
 }

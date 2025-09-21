@@ -7,6 +7,19 @@ const markers = {};
 let addingMode = false;
 let currentClickLatLng = null;
 
+// Definice ikon pro markery
+const defaultIcon = new L.Icon.Default();
+
+const respawnReadyIcon = new L.Icon({
+    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+
 // Inicializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
@@ -71,11 +84,20 @@ async function updateStatus(id, newStatus) {
     const location = locations.find(loc => loc._id === id);
     if (!location) return;
 
-    const dataToUpdate = {
+    let dataToUpdate = {
         status: newStatus,
         lastUpdated: new Date()
     };
     
+    if (newStatus === 'looted' || newStatus === 'tamed') {
+        dataToUpdate.status = 'respawning';
+        dataToUpdate.spawnTime = new Date();
+    } else if (newStatus === 'present') {
+        dataToUpdate.status = 'present';
+        dataToUpdate.spawnTime = null;
+    }
+
+
     try {
         const response = await fetch(`/api/locations/${id}`, {
             method: 'PUT',
@@ -86,13 +108,19 @@ async function updateStatus(id, newStatus) {
         });
 
         if (response.ok) {
-            location.status = newStatus;
+            location.status = dataToUpdate.status;
             location.lastUpdated = dataToUpdate.lastUpdated;
+            location.spawnTime = dataToUpdate.spawnTime;
             updateLocationList();
             
             const marker = markers[location._id];
-            if (marker && marker.getPopup().isOpen()) {
-                marker.getPopup().setContent(createPopupContent(location));
+            if (marker) {
+                if (location.status === 'present') {
+                    marker.setIcon(defaultIcon);
+                }
+                if (marker.getPopup().isOpen()) {
+                    marker.getPopup().setContent(createPopupContent(location));
+                }
             }
 
         } else {
@@ -133,8 +161,16 @@ async function editLocation(id) {
     const newName = prompt("Zadejte nové jméno:", location.name);
     if (newName === null) return; // Zrušeno uživatelem
 
+    const respawnTimeInput = prompt("Zadejte čas respawnu v hodinách (nechte prázdné, pokud neznáte):", location.respawnTimeInHours || '');
+    let newRespawnTime = respawnTimeInput === '' ? null : parseFloat(respawnTimeInput);
+    if (isNaN(newRespawnTime)) {
+        alert("Neplatný formát času. Čas nebyl upraven.");
+        newRespawnTime = location.respawnTimeInHours;
+    }
+
     const dataToUpdate = {
-        name: newName
+        name: newName,
+        respawnTimeInHours: newRespawnTime
     };
 
     try {
@@ -148,6 +184,7 @@ async function editLocation(id) {
 
         if (response.ok) {
             location.name = newName;
+            location.respawnTimeInHours = newRespawnTime;
             updateLocationList();
             
             const marker = markers[location._id];
@@ -212,13 +249,23 @@ function renderMarkers() {
             console.warn(`Přeskočen záznam s neplatnými souřadnicemi:`, location);
             return;
         }
-
-        const marker = L.marker([location.coords.lat, location.coords.lng]).addTo(map);
+        
+        const marker = L.marker([location.coords.lat, location.coords.lng], {
+            icon: location.status === 'respawning' && isRespawnReady(location) ? respawnReadyIcon : defaultIcon
+        }).addTo(map);
 
         marker.bindPopup(() => createPopupContent(location));
         
         markers[location._id] = marker; 
     });
+}
+
+// Pomocná funkce pro kontrolu, zda je respawn hotov
+function isRespawnReady(location) {
+    if (!location.spawnTime || !location.respawnTimeInHours) return false;
+    const respawnDurationMs = location.respawnTimeInHours * 60 * 60 * 1000;
+    const respawnTimeMs = new Date(location.spawnTime).getTime() + respawnDurationMs;
+    return new Date().getTime() >= respawnTimeMs;
 }
 
 // Pomocná funkce pro vytváření pop-up obsahu
@@ -227,18 +274,18 @@ function createPopupContent(location) {
     if (location.type === 'poklad' || location.type === 'dungeon') {
         statusButtons = `
             <button onclick="updateStatus('${location._id}', 'looted')">Vybráno</button>
-            <button onclick="updateStatus('${location._id}', 'absent')">Nebyl</button>
+            <button onclick="updateStatus('${location._id}', 'present')">Spawnulo</button>
         `;
     } else if (location.type === 'spawn') {
         statusButtons = `
             <button onclick="updateStatus('${location._id}', 'tamed')">Ochočeno</button>
-            <button onclick="updateStatus('${location._id}', 'absent')">Nebyl</button>
+            <button onclick="updateStatus('${location._id}', 'present')">Spawnulo</button>
         `;
     }
 
     const editButtons = `
         <hr>
-        <button onclick="editLocation('${location._id}')">Upravit jméno</button>
+        <button onclick="editLocation('${location._id}')">Upravit jméno a timer</button>
         <br>
         <button onclick="editLocationType('${location._id}', 'poklad')">Změnit na poklad</button>
         <button onclick="editLocationType('${location._id}', 'spawn')">Změnit na spawn</button>
@@ -254,6 +301,7 @@ function createPopupContent(location) {
         <b>${location.name}</b><br>
         Typ: ${location.type}<br>
         Stav: <span id="status-${location._id}">${location.status}</span><br>
+        ${location.respawnTimeInHours ? `Timer: ${location.respawnTimeInHours}h<br>` : ''}
         ${lastUpdatedString}
         <div id="timer-${location._id}"></div>
         ${statusButtons}
@@ -269,7 +317,7 @@ function sortLocations(criteria, direction) {
         if (criteria === 'name') {
             comparison = a.name.localeCompare(b.name);
         } else if (criteria === 'status') {
-            const statusOrder = { 'present': 1, 'looted': 2, 'tamed': 2, 'absent': 3 };
+            const statusOrder = { 'present': 1, 'looted': 2, 'tamed': 2, 'respawning': 3 };
             const statusComparison = statusOrder[a.status] - statusOrder[b.status];
             if (statusComparison !== 0) {
                 comparison = statusComparison;
@@ -294,7 +342,7 @@ function getFilteredLocations() {
     });
 
     if (activeFilters.length === 0) {
-        return locations; // Vrací všechny body, pokud není zaškrtnutý žádný filtr
+        return locations;
     } else {
         return locations.filter(location => activeFilters.includes(location.type));
     }
@@ -308,17 +356,29 @@ function updateLocationList() {
 
     const listElement = document.getElementById('location-list');
     listElement.innerHTML = ''; 
-    
+
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
     
-    const filteredLocations = getFilteredLocations(); // Získání filtrovaných bodů
+    const filteredLocations = getFilteredLocations();
     
     filteredLocations.forEach(location => {
         if (searchTerm === '' || location.name.toLowerCase().includes(searchTerm)) {
             const listItem = document.createElement('li');
             let statusText = location.status;
-            if (location.status === 'absent') {
-                statusText = 'nebyl';
+            if (location.status === 'respawning') {
+                statusText = 'čeká na spawn';
+            } else if (location.status === 'looted') {
+                statusText = 'vybráno';
+            } else if (location.status === 'tamed') {
+                statusText = 'ochočeno';
+            } else if (location.status === 'present') {
+                statusText = 'přítomno';
+            }
+            
+            if (location.status === 'respawning' && isRespawnReady(location)) {
+                listItem.classList.add('respawn-ready');
+            } else {
+                listItem.classList.remove('respawn-ready');
             }
             
             listItem.innerHTML = `
@@ -342,22 +402,45 @@ function updateLocationList() {
 function updateTimer(location) {
     const timerElementPopup = document.getElementById(`timer-${location._id}`);
     const timerElementList = document.getElementById(`time-list-${location._id}`);
+    
+    if (!timerElementPopup || !timerElementList) return;
 
+    let lastUpdatedTimeStr = '';
+    let remainingTimeStr = '';
+
+    // Uplynulý čas od poslední změny
     if (location.lastUpdated) {
         const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
         const hours = Math.floor(timeSinceUpdate / 3600);
         const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
         const seconds = Math.floor(timeSinceUpdate % 60);
+        lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
+    }
 
-        const timeString = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
-        
-        if (timerElementPopup) {
-            timerElementPopup.innerText = timeString;
-        }
-        if (timerElementList) {
-            timerElementList.innerText = timeString;
+    // Odpočet
+    if (location.status === 'respawning' && location.spawnTime && location.respawnTimeInHours) {
+        const respawnDurationMs = location.respawnTimeInHours * 60 * 60 * 1000;
+        const respawnTimeMs = new Date(location.spawnTime).getTime() + respawnDurationMs;
+        const remainingMs = respawnTimeMs - new Date().getTime();
+
+        if (remainingMs > 0) {
+            const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+            const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+            remainingTimeStr = `Zbývající čas: ${hours}h ${minutes}m ${seconds}s`;
+            // Přepnout na výchozí ikonu, pokud se odpočet ještě nezastavil
+            markers[location._id]?.setIcon(defaultIcon);
+        } else {
+            remainingTimeStr = 'Spawn hotov!';
+            // Přepnout na zelenou ikonu
+            markers[location._id]?.setIcon(respawnReadyIcon);
         }
     }
+    
+    // Zobrazení obou časů
+    const combinedTimerString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
+    timerElementPopup.innerHTML = combinedTimerString;
+    timerElementList.innerHTML = combinedTimerString;
 }
 
 // Nová funkce pro aplikování filtrů
@@ -432,12 +515,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const locationName = prompt("Zadej jméno pro bod:");
 
             if (locationName) {
+                const respawnTimeInput = prompt("Zadejte čas respawnu v hodinách (nechte prázdné, pokud neznáte):", '');
+                let respawnTime = respawnTimeInput === '' ? null : parseFloat(respawnTimeInput);
+                if (isNaN(respawnTime)) {
+                    alert("Neplatný formát času. Čas nebude uložen.");
+                    respawnTime = null;
+                }
+                
                 document.getElementById('type-selection-container').style.display = 'none';
                 document.getElementById('instruction').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
                 map.getContainer().style.cursor = '';
                 
-                addNewLocation(currentClickLatLng, selectedType, locationName);
+                addNewLocation(currentClickLatLng, selectedType, locationName, respawnTime);
             } else {
                 addingMode = false;
                 document.getElementById('type-selection-container').style.display = 'none';
@@ -458,9 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(() => {
         locations.forEach(location => {
-            if (location.status !== 'present') {
-                updateTimer(location);
-            }
+            updateTimer(location);
         });
     }, 1000);
 });

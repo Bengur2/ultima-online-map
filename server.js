@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // Inicializace Lowdb
-const adapter = new FileSync('locations.json');
+const adapter = new FileSync('/data/locations.json');
 const db = low(adapter);
 
 db.defaults({ locations: [] }).write();

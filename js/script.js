@@ -29,7 +29,7 @@ function setupMap() {
 // Funkce pro získání dat ze serveru
 async function fetchLocations() {
     try {
-        const response = await fetch('http://localhost:3000/api/locations');
+        const response = await fetch('/api/locations');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -50,7 +50,7 @@ function addNewLocation(latlng, type, name) {
         coords: { lat: latlng.lat, lng: latlng.lng }
     };
     
-    fetch('http://localhost:3000/api/locations', {
+    fetch('/api/locations', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -77,7 +77,7 @@ async function updateStatus(id, newStatus) {
     };
     
     try {
-        const response = await fetch(`http://localhost:3000/api/locations/${id}`, {
+        const response = await fetch(`/api/locations/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -108,7 +108,7 @@ async function deleteLocation(id) {
     if (!confirm("Opravdu chcete smazat toto místo?")) return;
 
     try {
-        const response = await fetch(`http://localhost:3000/api/locations/${id}`, {
+        const response = await fetch(`/api/locations/${id}`, {
             method: 'DELETE'
         });
 
@@ -138,7 +138,7 @@ async function editLocation(id) {
     };
 
     try {
-        const response = await fetch(`http://localhost:3000/api/locations/${id}`, {
+        const response = await fetch(`/api/locations/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -173,7 +173,7 @@ async function editLocationType(id, newType) {
     };
 
     try {
-        const response = await fetch(`http://localhost:3000/api/locations/${id}`, {
+        const response = await fetch(`/api/locations/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -224,7 +224,6 @@ function renderMarkers() {
 // Pomocná funkce pro vytváření pop-up obsahu
 function createPopupContent(location) {
     let statusButtons = '';
-    // Podle typu místa zobrazíme příslušná tlačítka
     if (location.type === 'poklad' || location.type === 'dungeon') {
         statusButtons = `
             <button onclick="updateStatus('${location._id}', 'looted')">Vybráno</button>
@@ -248,7 +247,6 @@ function createPopupContent(location) {
         <button onclick="deleteLocation('${location._id}')">Smazat</button>
     `;
 
-    // Zobrazení datumu a času poslední aktualizace
     const lastUpdated = location.lastUpdated ? new Date(location.lastUpdated) : null;
     const lastUpdatedString = lastUpdated ? `<br>Naposledy změněno: ${lastUpdated.toLocaleDateString()} ${lastUpdated.toLocaleTimeString()}` : '';
 

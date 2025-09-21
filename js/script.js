@@ -286,6 +286,20 @@ function sortLocations(criteria, direction) {
     });
 }
 
+// Funkce pro získání filtrovaného seznamu bodů
+function getFilteredLocations() {
+    const activeFilters = [];
+    document.querySelectorAll('.filters input[type="checkbox"]:checked').forEach(checkbox => {
+        activeFilters.push(checkbox.value);
+    });
+
+    if (activeFilters.length === 0) {
+        return locations; // Vrací všechny body, pokud není zaškrtnutý žádný filtr
+    } else {
+        return locations.filter(location => activeFilters.includes(location.type));
+    }
+}
+
 // Funkce pro aktualizaci seznamu míst
 function updateLocationList() {
     const sortBy = document.getElementById('sort-by').value;
@@ -294,10 +308,12 @@ function updateLocationList() {
 
     const listElement = document.getElementById('location-list');
     listElement.innerHTML = ''; 
-
+    
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
     
-    locations.forEach(location => {
+    const filteredLocations = getFilteredLocations(); // Získání filtrovaných bodů
+    
+    filteredLocations.forEach(location => {
         if (searchTerm === '' || location.name.toLowerCase().includes(searchTerm)) {
             const listItem = document.createElement('li');
             let statusText = location.status;
@@ -384,6 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sort-direction').addEventListener('change', () => {
         updateLocationList();
         renderMarkers();
+    });
+
+    document.querySelectorAll('.filters input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            applyFilters();
+            updateLocationList();
+        });
     });
 
     document.getElementById('search-input').addEventListener('input', () => {

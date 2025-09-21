@@ -11,8 +11,8 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Důležité: Servírování statických souborů přímo z kořenového adresáře projektu
-app.use(express.static(path.join(__dirname, '..')));
+// Důležité: Opravená cesta pro servírování statických souborů
+app.use(express.static(__dirname));
 
 // Inicializace Lowdb
 const adapter = new FileSync('locations.json');

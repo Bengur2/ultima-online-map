@@ -3,14 +3,19 @@ const express = require('express');
 const cors = require('cors');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync'); 
+const path = require('path'); // Nový import pro práci s cestami
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Použití PORT proměnné prostředí z Renderu
 
 app.use(cors());
 app.use(express.json());
 
-const adapter = new FileSync('locations.json');
+// Důležité: Přidání middleware pro servírování statických souborů
+app.use(express.static(path.join(__dirname, '..')));
+
+// Inicializace Lowdb
+const adapter = new FileSync(path.join(__dirname, '..', 'locations.json'));
 const db = low(adapter);
 
 db.defaults({ locations: [] }).write();
@@ -52,7 +57,6 @@ app.put('/api/locations/:id', (req, res) => {
     res.json({ message: `Aktualizováno záznamů: 1` });
 });
 
-// Nový endpoint pro smazání bodu
 app.delete('/api/locations/:id', (req, res) => {
     const locationId = req.params.id;
 

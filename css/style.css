@@ -7,10 +7,12 @@ body {
     color: #eee;
 }
 
+/* Styly pro desktop */
 .container {
     display: flex;
     width: 100%;
     height: 100vh;
+    flex-direction: row; /* Pro PC je layout v řádku */
 }
 
 #map {
@@ -96,10 +98,30 @@ label {
 }
 
 .respawn-ready {
-    background-color: #2e7d32; /* Tmavě zelené pozadí pro dokončený respawn */
+    background-color: #2e7d32;
 }
 
 #instruction {
     font-style: italic;
     color: #aaa !important;
+}
+
+/* ------------------------------------------------ */
+/* Styly pro mobilní zařízení */
+/* Aplikuje se, když je šířka okna menší než 768px */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column; /* Změna layoutu na sloupec */
+    }
+
+    #map {
+        height: 50vh; /* Mapa zabere 50% výšky obrazovky */
+        width: 100%; /* Plná šířka */
+    }
+
+    #sidebar {
+        height: 50vh; /* Sidebar zabere zbytek výšky obrazovky */
+        width: 100%; /* Plná šířka */
+        border-left: none; /* Odstraní čáru */
+    }
 }

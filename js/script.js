@@ -283,6 +283,19 @@ function createPopupContent(location) {
         `;
     }
 
+    let respawnInfo = '';
+    if (location.respawnTimeInHours) {
+        const respawnDurationMs = location.respawnTimeInHours * 60 * 60 * 1000;
+        const respawnTime = new Date(new Date(location.lastUpdated).getTime() + respawnDurationMs);
+        const respawnTimeString = respawnTime.toLocaleString('cs-CZ', { dateStyle: 'short', timeStyle: 'short' });
+
+        respawnInfo = `
+            <br>
+            Délka timeru: ${location.respawnTimeInHours}h<br>
+            Odhadovaný spawn: ${respawnTimeString}
+        `;
+    }
+
     const editButtons = `
         <hr>
         <button onclick="editLocation('${location._id}')">Upravit jméno a timer</button>
@@ -301,8 +314,8 @@ function createPopupContent(location) {
         <b>${location.name}</b><br>
         Typ: ${location.type}<br>
         Stav: <span id="status-${location._id}">${location.status}</span><br>
-        ${location.respawnTimeInHours ? `Timer: ${location.respawnTimeInHours}h<br>` : ''}
         ${lastUpdatedString}
+        ${respawnInfo}
         <div id="timer-${location._id}"></div>
         ${statusButtons}
         ${editButtons}

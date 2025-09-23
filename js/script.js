@@ -64,14 +64,12 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name, respawnTimeInHours) {
+function addNewLocation(latlng, type, name) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
         status: 'present',
-        coords: { lat: latlng.lat, lng: latlng.lng },
-        respawnTimeInHours: respawnTimeInHours || null,
-        spawnTime: null
+        coords: { lat: latlng.lat, lng: latlng.lng }
     };
     
     fetch('/api/locations', {
@@ -430,6 +428,7 @@ function updateLocationList() {
 
             listElement.appendChild(listItem);
             
+            // Okamžitá aktualizace časovače po vytvoření prvku v seznamu
             updateTimer(location);
         }
     });

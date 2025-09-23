@@ -64,12 +64,14 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name) {
+function addNewLocation(latlng, type, name, respawnTimeInHours) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
         status: 'present',
-        coords: { lat: latlng.lat, lng: latlng.lng }
+        coords: { lat: latlng.lat, lng: latlng.lng },
+        respawnTimeInHours: respawnTimeInHours || null,
+        spawnTime: null
     };
     
     fetch('/api/locations', {
@@ -516,8 +518,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-location-btn').addEventListener('click', () => {
         addingMode = true;
         document.getElementById('add-location-btn').disabled = true;
-        document.getElementById('instruction').style.display = 'block';
-        document.getElementById('type-selection-container').style.display = 'none';
+        document.getElementById('instruction-desktop').style.display = 'block';
+        document.getElementById('type-selection-container-desktop').style.display = 'none';
         map.getContainer().style.cursor = 'crosshair';
     });
     
@@ -580,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     respawnTime = null;
                 }
                 
-                // Resetování stavu UI
+                // Resetování stavu UI pro desktop i mobil
                 document.getElementById('type-selection-container-desktop').style.display = 'none';
                 document.getElementById('instruction-desktop').style.display = 'none';
                 document.getElementById('type-selection-container-mobile').style.display = 'none';

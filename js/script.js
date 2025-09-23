@@ -67,7 +67,7 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name) {
+function addNewLocation(latlng, type, name, respawnTimeInHours) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,

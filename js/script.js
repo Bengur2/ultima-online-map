@@ -32,7 +32,7 @@ const respawningIcon = new L.Icon({
 // Inicializace Socket.IO klienta
 const socket = io("https://ultima-online-map.onrender.com");
 
-// Inicializace mapy a jejího nastavení
+// Initializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
         crs: L.CRS.Simple,
@@ -67,7 +67,7 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name, respawnTimeInHours) {
+function addNewLocation(latlng, type, name) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
@@ -86,7 +86,7 @@ function addNewLocation(latlng, type, name, respawnTimeInHours) {
     })
     .then(response => response.json())
     .then(savedLocation => {
-        locations.push(savedLocation);
+        // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
     })
     .catch(error => console.error('Chyba při ukládání nové značky:', error));
 }
@@ -120,25 +120,7 @@ async function updateStatus(id, newStatus) {
         });
 
         if (response.ok) {
-            location.status = dataToUpdate.status;
-            location.lastUpdated = dataToUpdate.lastUpdated;
-            location.spawnTime = dataToUpdate.spawnTime;
-            
-            const marker = markers[location._id];
-            if (marker) {
-                if (location.status === 'respawning' && !isRespawnReady(location)) {
-                     marker.setIcon(respawningIcon);
-                } else if (isRespawnReady(location)) {
-                    marker.setIcon(respawnReadyIcon);
-                } else {
-                    marker.setIcon(defaultIcon);
-                }
-                
-                if (marker.getPopup().isOpen()) {
-                    marker.getPopup().setContent(createPopupContent(location));
-                }
-            }
-
+            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
         } else {
             console.error('Chyba při aktualizaci stavu na serveru.');
         }
@@ -157,9 +139,7 @@ async function deleteLocation(id) {
         });
 
         if (response.ok) {
-            locations = locations.filter(loc => loc._id !== id);
-            map.removeLayer(markers[id]);
-            delete markers[id];
+            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
         } else {
             console.error('Chyba při mazání místa na serveru.');
         }
@@ -198,14 +178,7 @@ async function editLocation(id) {
         });
 
         if (response.ok) {
-            location.name = newName;
-            location.respawnTimeInHours = newRespawnTime;
-            
-            const marker = markers[location._id];
-            if (marker && marker.getPopup().isOpen()) {
-                marker.getPopup().setContent(createPopupContent(location));
-            }
-
+            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
         } else {
             console.error('Chyba při editaci místa na serveru.');
         }
@@ -233,13 +206,7 @@ async function editLocationType(id, newType) {
         });
 
         if (response.ok) {
-            location.type = newType;
-            
-            const marker = markers[location._id];
-            if (marker && marker.getPopup().isOpen()) {
-                marker.getPopup().setContent(createPopupContent(location));
-            }
-
+            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
         } else {
             console.error('Chyba při editaci typu místa na serveru.');
         }

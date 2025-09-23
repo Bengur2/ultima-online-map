@@ -20,8 +20,6 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// Důležité: Servírování statických souborů ze stejného adresáře
 app.use(express.static(__dirname));
 
 const adapter = new FileSync('locations.json');

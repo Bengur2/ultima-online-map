@@ -106,7 +106,7 @@ label {
 }
 
 .mobile-controls {
-    display: none; /* Skryto na desktopu */
+    display: none;
 }
 
 /* ------------------------------------------------ */
@@ -137,6 +137,10 @@ label {
     #sidebar.open {
         transform: translateX(0);
     }
+
+    .desktop-controls {
+        display: none;
+    }
     
     .mobile-controls {
         display: flex;
@@ -157,8 +161,7 @@ label {
         font-size: 24px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-
-    /* Zmenšení pop-up okna pro mobily */
+    
     .leaflet-popup-content-wrapper {
         font-size: 12px;
     }

@@ -468,19 +468,16 @@ function updateTimer(location) {
         }
     }
     
-    // Zobrazení obou časů v pop-upu
     if (timerElementPopup) {
         const popupTimeString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
         timerElementPopup.innerHTML = popupTimeString;
     }
     
-    // Zobrazení obou časů v listu
     if (timerElementList) {
         const listTimeString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
         timerElementList.innerHTML = listTimeString;
     }
     
-    // Dynamická změna ikony markeoru
     if (location.status === 'respawning' && location.respawnTimeInHours) {
         if (isRespawnReady(location)) {
             markers[location._id]?.setIcon(respawnReadyIcon);
@@ -522,6 +519,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('instruction').style.display = 'block';
         document.getElementById('type-selection-container').style.display = 'none';
         map.getContainer().style.cursor = 'crosshair';
+    });
+    
+    document.getElementById('add-location-btn-mobile').addEventListener('click', () => {
+        addingMode = true;
+        document.getElementById('add-location-btn-mobile').disabled = true;
+        document.getElementById('instruction-mobile').style.display = 'block';
+        map.getContainer().style.cursor = 'crosshair';
+    });
+    
+    document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('open');
     });
 
     document.getElementById('sort-by').addEventListener('change', () => {
@@ -571,17 +580,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     respawnTime = null;
                 }
                 
-                document.getElementById('type-selection-container').style.display = 'none';
-                document.getElementById('instruction').style.display = 'none';
+                // Resetování stavu UI
+                document.getElementById('type-selection-container-desktop').style.display = 'none';
+                document.getElementById('instruction-desktop').style.display = 'none';
+                document.getElementById('type-selection-container-mobile').style.display = 'none';
+                document.getElementById('instruction-mobile').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
+                document.getElementById('add-location-btn-mobile').disabled = false;
                 map.getContainer().style.cursor = '';
                 
                 addNewLocation(currentClickLatLng, selectedType, locationName, respawnTime);
             } else {
+                // Resetování stavu UI při zrušení
                 addingMode = false;
-                document.getElementById('type-selection-container').style.display = 'none';
-                document.getElementById('instruction').style.display = 'none';
+                document.getElementById('type-selection-container-desktop').style.display = 'none';
+                document.getElementById('instruction-desktop').style.display = 'none';
+                document.getElementById('type-selection-container-mobile').style.display = 'none';
+                document.getElementById('instruction-mobile').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
+                document.getElementById('add-location-btn-mobile').disabled = false;
                 map.getContainer().style.cursor = '';
             }
         });
@@ -590,8 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
     map.on('click', (e) => {
         if (addingMode) {
             currentClickLatLng = e.latlng;
-            document.getElementById('instruction').style.display = 'none';
-            document.getElementById('type-selection-container').style.display = 'block';
+            document.getElementById('instruction-desktop').style.display = 'none';
+            document.getElementById('instruction-mobile').style.display = 'none';
+            document.getElementById('type-selection-container-desktop').style.display = 'block';
+            document.getElementById('type-selection-container-mobile').style.display = 'block';
         }
     });
 

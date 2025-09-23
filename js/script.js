@@ -19,6 +19,15 @@ const respawnReadyIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 
+const respawningIcon = new L.Icon({
+    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
 
 // Inicializace mapy a jejího nastavení
 function setupMap() {
@@ -117,6 +126,8 @@ async function updateStatus(id, newStatus) {
             if (marker) {
                 if (location.status === 'present') {
                     marker.setIcon(defaultIcon);
+                } else if (location.status === 'respawning' && !isRespawnReady(location)) {
+                    marker.setIcon(respawningIcon);
                 }
                 if (marker.getPopup().isOpen()) {
                     marker.getPopup().setContent(createPopupContent(location));
@@ -249,11 +260,17 @@ function renderMarkers() {
             console.warn(`Přeskočen záznam s neplatnými souřadnicemi:`, location);
             return;
         }
-        
-        const marker = L.marker([location.coords.lat, location.coords.lng], {
-            icon: location.status === 'respawning' && isRespawnReady(location) ? respawnReadyIcon : defaultIcon
-        }).addTo(map);
 
+        let icon = defaultIcon;
+        if (location.status === 'respawning') {
+            if (isRespawnReady(location)) {
+                icon = respawnReadyIcon;
+            } else {
+                icon = respawningIcon;
+            }
+        }
+        
+        const marker = L.marker([location.coords.lat, location.coords.lng], { icon: icon }).addTo(map);
         marker.bindPopup(() => createPopupContent(location));
         
         markers[location._id] = marker; 
@@ -408,7 +425,6 @@ function updateLocationList() {
 
             listElement.appendChild(listItem);
             
-            // Okamžitá aktualizace časovače po vytvoření prvku v seznamu
             updateTimer(location);
         }
     });
@@ -429,7 +445,7 @@ function updateTimer(location) {
         const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
         const hours = Math.floor(timeSinceUpdate / 3600);
         const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
-        const seconds = Math.floor(timeSinceUpdate % 60);
+        const seconds = Math.floor((timeSinceUpdate % 60) / 1000);
         lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
     }
 
@@ -445,11 +461,18 @@ function updateTimer(location) {
             const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
             remainingTimeStr = `Zbývající čas: ${hours}h ${minutes}m ${seconds}s`;
             // Přepnout na výchozí ikonu, pokud se odpočet ještě nezastavil
-            markers[location._id]?.setIcon(defaultIcon);
+            markers[location._id]?.setIcon(respawningIcon);
         } else {
             remainingTimeStr = 'Spawn hotov!';
             // Přepnout na zelenou ikonu
             markers[location._id]?.setIcon(respawnReadyIcon);
+        }
+    } else {
+        // Pokud není respawning, zkontrolujeme, zda by neměl být hotov
+        if (isRespawnReady(location)) {
+            markers[location._id]?.setIcon(respawnReadyIcon);
+        } else {
+            markers[location._id]?.setIcon(defaultIcon);
         }
     }
     

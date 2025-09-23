@@ -32,7 +32,7 @@ const respawningIcon = new L.Icon({
 // Inicializace Socket.IO klienta
 const socket = io("https://ultima-online-map.onrender.com");
 
-// Initializace mapy a jejího nastavení
+// Inicializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
         crs: L.CRS.Simple,
@@ -67,7 +67,7 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name) {
+function addNewLocation(latlng, type, name, respawnTimeInHours) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
@@ -86,7 +86,7 @@ function addNewLocation(latlng, type, name) {
     })
     .then(response => response.json())
     .then(savedLocation => {
-        // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
+        locations.push(savedLocation);
     })
     .catch(error => console.error('Chyba při ukládání nové značky:', error));
 }
@@ -120,7 +120,25 @@ async function updateStatus(id, newStatus) {
         });
 
         if (response.ok) {
-            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
+            location.status = dataToUpdate.status;
+            location.lastUpdated = dataToUpdate.lastUpdated;
+            location.spawnTime = dataToUpdate.spawnTime;
+            
+            const marker = markers[location._id];
+            if (marker) {
+                if (location.status === 'respawning' && !isRespawnReady(location)) {
+                     marker.setIcon(respawningIcon);
+                } else if (isRespawnReady(location)) {
+                    marker.setIcon(respawnReadyIcon);
+                } else {
+                    marker.setIcon(defaultIcon);
+                }
+                
+                if (marker.getPopup().isOpen()) {
+                    marker.getPopup().setContent(createPopupContent(location));
+                }
+            }
+
         } else {
             console.error('Chyba při aktualizaci stavu na serveru.');
         }
@@ -139,7 +157,9 @@ async function deleteLocation(id) {
         });
 
         if (response.ok) {
-            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
+            locations = locations.filter(loc => loc._id !== id);
+            map.removeLayer(markers[id]);
+            delete markers[id];
         } else {
             console.error('Chyba při mazání místa na serveru.');
         }
@@ -178,7 +198,14 @@ async function editLocation(id) {
         });
 
         if (response.ok) {
-            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
+            location.name = newName;
+            location.respawnTimeInHours = newRespawnTime;
+            
+            const marker = markers[location._id];
+            if (marker && marker.getPopup().isOpen()) {
+                marker.getPopup().setContent(createPopupContent(location));
+            }
+
         } else {
             console.error('Chyba při editaci místa na serveru.');
         }
@@ -206,7 +233,13 @@ async function editLocationType(id, newType) {
         });
 
         if (response.ok) {
-            // Nic zde neprovádíme, protože Socket.IO nám pošle signál, že se má aktualizovat
+            location.type = newType;
+            
+            const marker = markers[location._id];
+            if (marker && marker.getPopup().isOpen()) {
+                marker.getPopup().setContent(createPopupContent(location));
+            }
+
         } else {
             console.error('Chyba při editaci typu místa na serveru.');
         }
@@ -482,55 +515,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-location-btn').addEventListener('click', () => {
         addingMode = true;
         document.getElementById('add-location-btn').disabled = true;
-        document.getElementById('instruction-desktop').style.display = 'block';
+        document.getElementById('instruction').style.display = 'block';
         document.getElementById('type-selection-container-desktop').style.display = 'none';
         map.getContainer().style.cursor = 'crosshair';
-    });
-    
-    document.getElementById('add-location-btn-mobile').addEventListener('click', () => {
-        addingMode = true;
-        document.getElementById('add-location-btn-mobile').disabled = true;
-        document.getElementById('instruction-mobile').style.display = 'block';
-        map.getContainer().style.cursor = 'crosshair';
-    });
-    
-    document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('open');
-    });
-
-    document.getElementById('sort-by').addEventListener('change', () => {
-        updateLocationList();
-        renderMarkers();
-    });
-
-    document.getElementById('sort-direction').addEventListener('change', () => {
-        updateLocationList();
-        renderMarkers();
-    });
-
-    document.querySelectorAll('.filters input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            applyFilters();
-            updateLocationList();
-        });
-    });
-
-    document.getElementById('search-input').addEventListener('input', () => {
-        const searchTerm = document.getElementById('search-input').value.toLowerCase();
-        
-        updateLocationList();
-
-        locations.forEach(location => {
-            const marker = markers[location._id];
-            if (!marker) return;
-            
-            if (location.name.toLowerCase().includes(searchTerm) || searchTerm === '') {
-                marker.addTo(map);
-            } else {
-                map.removeLayer(marker);
-            }
-        });
     });
 
     document.querySelectorAll('.type-btn').forEach(button => {
@@ -546,23 +533,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     respawnTime = null;
                 }
                 
-                document.getElementById('type-selection-container-desktop').style.display = 'none';
-                document.getElementById('instruction-desktop').style.display = 'none';
-                document.getElementById('type-selection-container-mobile').style.display = 'none';
-                document.getElementById('instruction-mobile').style.display = 'none';
+                document.getElementById('type-selection-container').style.display = 'none';
+                document.getElementById('instruction').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
-                document.getElementById('add-location-btn-mobile').disabled = false;
                 map.getContainer().style.cursor = '';
                 
                 addNewLocation(currentClickLatLng, selectedType, locationName, respawnTime);
             } else {
                 addingMode = false;
-                document.getElementById('type-selection-container-desktop').style.display = 'none';
-                document.getElementById('instruction-desktop').style.display = 'none';
-                document.getElementById('type-selection-container-mobile').style.display = 'none';
-                document.getElementById('instruction-mobile').style.display = 'none';
+                document.getElementById('type-selection-container').style.display = 'none';
+                document.getElementById('instruction').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
-                document.getElementById('add-location-btn-mobile').disabled = false;
                 map.getContainer().style.cursor = '';
             }
         });
@@ -571,14 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
     map.on('click', (e) => {
         if (addingMode) {
             currentClickLatLng = e.latlng;
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                document.getElementById('instruction-mobile').style.display = 'none';
-                document.getElementById('type-selection-container-mobile').style.display = 'block';
-            } else {
-                document.getElementById('instruction-desktop').style.display = 'none';
-                document.getElementById('type-selection-container-desktop').style.display = 'block';
-            }
+            document.getElementById('instruction').style.display = 'none';
+            document.getElementById('type-selection-container').style.display = 'block';
         }
     });
 

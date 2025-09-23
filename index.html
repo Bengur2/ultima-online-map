@@ -15,18 +15,13 @@
     <div class="container">
         <div id="map"></div>
 
+        <div class="mobile-controls">
+            <button id="add-location-btn" class="fab">+</button>
+            <button id="toggle-sidebar-btn" class="fab">☰</button>
+        </div>
+
         <div id="sidebar">
             <h2>Seznam míst</h2>
-            <div class="controls">
-                <button id="add-location-btn">Přidat místo</button>
-                <div id="type-selection-container" style="display:none;">
-                    <p>Vyber typ místa:</p>
-                    <button class="type-btn" data-type="poklad">Poklad</button>
-                    <button class="type-btn" data-type="spawn">Spawn</button>
-                    <button class="type-btn" data-type="dungeon">Dungeon</button>
-                </div>
-                <p id="instruction" style="display:none; color: gray;">Klikni do mapy pro přidání místa.</p>
-            </div>
             <div class="filters">
                 <label>
                     <input type="checkbox" id="filter-poklad" value="poklad"> Poklady

@@ -407,6 +407,9 @@ function updateLocationList() {
             };
 
             listElement.appendChild(listItem);
+            
+            // Okamžitá aktualizace časovače po vytvoření prvku v seznamu
+            updateTimer(location);
         }
     });
 }

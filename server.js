@@ -20,10 +20,11 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..')));
 
-// Důležité: Opravená inicializace Lowdb pro novější verze
-const adapter = new FileSync('/data/locations.json');
+// Důležité: Servírování statických souborů ze stejného adresáře
+app.use(express.static(__dirname));
+
+const adapter = new FileSync('locations.json');
 const db = low(adapter);
 
 db.defaults({ locations: [] }).write();

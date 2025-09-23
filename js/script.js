@@ -428,7 +428,6 @@ function updateLocationList() {
 
             listElement.appendChild(listItem);
             
-            // Okamžitá aktualizace časovače po vytvoření prvku v seznamu
             updateTimer(location);
         }
     });
@@ -439,6 +438,8 @@ function updateTimer(location) {
     const timerElementPopup = document.getElementById(`timer-${location._id}`);
     const timerElementList = document.getElementById(`time-list-${location._id}`);
     
+    if (!timerElementPopup && !timerElementList) return;
+
     let lastUpdatedTimeStr = '';
     let remainingTimeStr = '';
 

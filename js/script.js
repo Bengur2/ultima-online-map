@@ -64,12 +64,14 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name) {
+function addNewLocation(latlng, type, name, respawnTimeInHours) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
         status: 'present',
-        coords: { lat: latlng.lat, lng: latlng.lng }
+        coords: { lat: latlng.lat, lng: latlng.lng },
+        respawnTimeInHours: respawnTimeInHours || null,
+        spawnTime: null
     };
     
     fetch('/api/locations', {
@@ -123,9 +125,20 @@ async function updateStatus(id, newStatus) {
             updateLocationList();
             
             const marker = markers[location._id];
-            if (marker && marker.getPopup().isOpen()) {
-                marker.getPopup().setContent(createPopupContent(location));
+            if (marker) {
+                if (location.status === 'respawning' && !isRespawnReady(location)) {
+                     marker.setIcon(respawningIcon);
+                } else if (isRespawnReady(location)) {
+                    marker.setIcon(respawnReadyIcon);
+                } else {
+                    marker.setIcon(defaultIcon);
+                }
+                
+                if (marker.getPopup().isOpen()) {
+                    marker.getPopup().setContent(createPopupContent(location));
+                }
             }
+
         } else {
             console.error('Chyba při aktualizaci stavu na serveru.');
         }

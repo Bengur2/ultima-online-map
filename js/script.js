@@ -117,18 +117,23 @@ async function updateStatus(id, newStatus) {
         });
 
         if (response.ok) {
-            location.status = newStatus;
+            // Oprava: Používat stav z 'dataToUpdate' pro správnou synchronizaci
+            location.status = dataToUpdate.status;
             location.lastUpdated = dataToUpdate.lastUpdated;
             location.spawnTime = dataToUpdate.spawnTime;
             updateLocationList();
             
             const marker = markers[location._id];
             if (marker) {
-                if (location.status === 'present') {
+                // Okamžitá změna ikony markeoru
+                if (location.status === 'respawning' && !isRespawnReady(location)) {
+                     marker.setIcon(respawningIcon);
+                } else if (isRespawnReady(location)) {
+                    marker.setIcon(respawnReadyIcon);
+                } else {
                     marker.setIcon(defaultIcon);
-                } else if (location.status === 'respawning' && !isRespawnReady(location)) {
-                    marker.setIcon(respawningIcon);
                 }
+                
                 if (marker.getPopup().isOpen()) {
                     marker.getPopup().setContent(createPopupContent(location));
                 }
@@ -445,7 +450,7 @@ function updateTimer(location) {
         const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
         const hours = Math.floor(timeSinceUpdate / 3600);
         const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
-        const seconds = Math.floor(timeSinceUpdate % 60); // <-- Opraveno
+        const seconds = Math.floor(timeSinceUpdate % 60);
         lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
     }
 

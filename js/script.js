@@ -29,6 +29,9 @@ const respawningIcon = new L.Icon({
 });
 
 
+// Inicializace Socket.IO klienta
+const socket = io("https://ultima-online-map.onrender.com");
+
 // Inicializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
@@ -84,8 +87,6 @@ function addNewLocation(latlng, type, name, respawnTimeInHours) {
     .then(response => response.json())
     .then(savedLocation => {
         locations.push(savedLocation);
-        renderMarkers();
-        updateLocationList();
     })
     .catch(error => console.error('Chyba při ukládání nové značky:', error));
 }
@@ -122,7 +123,6 @@ async function updateStatus(id, newStatus) {
             location.status = dataToUpdate.status;
             location.lastUpdated = dataToUpdate.lastUpdated;
             location.spawnTime = dataToUpdate.spawnTime;
-            updateLocationList();
             
             const marker = markers[location._id];
             if (marker) {
@@ -160,7 +160,6 @@ async function deleteLocation(id) {
             locations = locations.filter(loc => loc._id !== id);
             map.removeLayer(markers[id]);
             delete markers[id];
-            updateLocationList();
         } else {
             console.error('Chyba při mazání místa na serveru.');
         }
@@ -201,7 +200,6 @@ async function editLocation(id) {
         if (response.ok) {
             location.name = newName;
             location.respawnTimeInHours = newRespawnTime;
-            updateLocationList();
             
             const marker = markers[location._id];
             if (marker && marker.getPopup().isOpen()) {
@@ -236,7 +234,6 @@ async function editLocationType(id, newType) {
 
         if (response.ok) {
             location.type = newType;
-            updateLocationList();
             
             const marker = markers[location._id];
             if (marker && marker.getPopup().isOpen()) {
@@ -519,54 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
         addingMode = true;
         document.getElementById('add-location-btn').disabled = true;
         document.getElementById('instruction').style.display = 'block';
-        document.getElementById('type-selection-container-desktop').style.display = 'none';
+        document.getElementById('type-selection-container').style.display = 'none';
         map.getContainer().style.cursor = 'crosshair';
-    });
-
-    document.getElementById('add-location-btn-mobile').addEventListener('click', () => {
-        addingMode = true;
-        document.getElementById('add-location-btn-mobile').disabled = true;
-        document.getElementById('instruction-mobile').style.display = 'block';
-        map.getContainer().style.cursor = 'crosshair';
-    });
-    
-    document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('open');
-    });
-
-    document.getElementById('sort-by').addEventListener('change', () => {
-        updateLocationList();
-        renderMarkers();
-    });
-
-    document.getElementById('sort-direction').addEventListener('change', () => {
-        updateLocationList();
-        renderMarkers();
-    });
-
-    document.querySelectorAll('.filters input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            applyFilters();
-            updateLocationList();
-        });
-    });
-
-    document.getElementById('search-input').addEventListener('input', () => {
-        const searchTerm = document.getElementById('search-input').value.toLowerCase();
-        
-        updateLocationList();
-
-        locations.forEach(location => {
-            const marker = markers[location._id];
-            if (!marker) return;
-            
-            if (location.name.toLowerCase().includes(searchTerm) || searchTerm === '') {
-                marker.addTo(map);
-            } else {
-                map.removeLayer(marker);
-            }
-        });
     });
 
     document.querySelectorAll('.type-btn').forEach(button => {
@@ -582,23 +533,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     respawnTime = null;
                 }
                 
-                document.getElementById('type-selection-container-desktop').style.display = 'none';
-                document.getElementById('instruction-desktop').style.display = 'none';
-                document.getElementById('type-selection-container-mobile').style.display = 'none';
-                document.getElementById('instruction-mobile').style.display = 'none';
+                document.getElementById('type-selection-container').style.display = 'none';
+                document.getElementById('instruction').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
-                document.getElementById('add-location-btn-mobile').disabled = false;
                 map.getContainer().style.cursor = '';
                 
                 addNewLocation(currentClickLatLng, selectedType, locationName, respawnTime);
             } else {
                 addingMode = false;
-                document.getElementById('type-selection-container-desktop').style.display = 'none';
-                document.getElementById('instruction-desktop').style.display = 'none';
-                document.getElementById('type-selection-container-mobile').style.display = 'none';
-                document.getElementById('instruction-mobile').style.display = 'none';
+                document.getElementById('type-selection-container').style.display = 'none';
+                document.getElementById('instruction').style.display = 'none';
                 document.getElementById('add-location-btn').disabled = false;
-                document.getElementById('add-location-btn-mobile').disabled = false;
                 map.getContainer().style.cursor = '';
             }
         });
@@ -607,14 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
     map.on('click', (e) => {
         if (addingMode) {
             currentClickLatLng = e.latlng;
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                document.getElementById('instruction-mobile').style.display = 'none';
-                document.getElementById('type-selection-container-mobile').style.display = 'block';
-            } else {
-                document.getElementById('instruction-desktop').style.display = 'none';
-                document.getElementById('type-selection-container-desktop').style.display = 'block';
-            }
+            document.getElementById('instruction').style.display = 'none';
+            document.getElementById('type-selection-container').style.display = 'block';
         }
     });
 

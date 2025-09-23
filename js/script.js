@@ -1,6 +1,6 @@
 // script.js
 
-// Globální proměnné pro mapu, seznam míst a markery
+// Globální proměnné pro mapu, seznam míst a markery test
 let map;
 let locations = [];
 const markers = {};

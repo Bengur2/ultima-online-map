@@ -29,9 +29,6 @@ const respawningIcon = new L.Icon({
 });
 
 
-// Inicializace Socket.IO klienta
-const socket = io("https://ultima-online-map.onrender.com");
-
 // Inicializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
@@ -67,7 +64,7 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name, respawnTimeInHours) {
+function addNewLocation(latlng, type, name) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
@@ -515,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-location-btn').addEventListener('click', () => {
         addingMode = true;
         document.getElementById('add-location-btn').disabled = true;
-        document.getElementById('instruction-desktop').style.display = 'block';
-        document.getElementById('type-selection-container-desktop').style.display = 'none';
+        document.getElementById('instruction').style.display = 'block';
+        document.getElementById('type-selection-container').style.display = 'none';
         map.getContainer().style.cursor = 'crosshair';
     });
     

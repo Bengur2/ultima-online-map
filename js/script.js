@@ -117,7 +117,7 @@ async function updateStatus(id, newStatus) {
         });
 
         if (response.ok) {
-            location.status = dataToUpdate.status;
+            location.status = newStatus;
             location.lastUpdated = dataToUpdate.lastUpdated;
             location.spawnTime = dataToUpdate.spawnTime;
             updateLocationList();
@@ -445,7 +445,7 @@ function updateTimer(location) {
         const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
         const hours = Math.floor(timeSinceUpdate / 3600);
         const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
-        const seconds = Math.floor((timeSinceUpdate % 60) / 1000);
+        const seconds = Math.floor(timeSinceUpdate % 60); // <-- Opraveno
         lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
     }
 

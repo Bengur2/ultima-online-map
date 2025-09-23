@@ -64,12 +64,14 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name) {
+function addNewLocation(latlng, type, name, respawnTimeInHours) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
         status: 'present',
-        coords: { lat: latlng.lat, lng: latlng.lng }
+        coords: { lat: latlng.lat, lng: latlng.lng },
+        respawnTimeInHours: respawnTimeInHours || null,
+        spawnTime: null
     };
     
     fetch('/api/locations', {
@@ -428,7 +430,6 @@ function updateLocationList() {
 
             listElement.appendChild(listItem);
             
-            // Okamžitá aktualizace časovače po vytvoření prvku v seznamu
             updateTimer(location);
         }
     });
@@ -439,48 +440,75 @@ function updateTimer(location) {
     const timerElementPopup = document.getElementById(`timer-${location._id}`);
     const timerElementList = document.getElementById(`time-list-${location._id}`);
     
-    if (!timerElementPopup || !timerElementList) return;
+    // Check if the list element exists and update it
+    if (timerElementList) {
+        let lastUpdatedTimeStr = '';
+        let remainingTimeStr = '';
 
-    let lastUpdatedTimeStr = '';
-    let remainingTimeStr = '';
+        // Uplynulý čas od poslední změny
+        if (location.lastUpdated) {
+            const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
+            const hours = Math.floor(timeSinceUpdate / 3600);
+            const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
+            const seconds = Math.floor(timeSinceUpdate % 60);
+            lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
+        }
 
-    // Uplynulý čas od poslední změny
-    if (location.lastUpdated) {
-        const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
-        const hours = Math.floor(timeSinceUpdate / 3600);
-        const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
-        const seconds = Math.floor(timeSinceUpdate % 60);
-        lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
+        // Odpočet
+        if (location.status === 'respawning' && location.spawnTime && location.respawnTimeInHours) {
+            const respawnDurationMs = location.respawnTimeInHours * 60 * 60 * 1000;
+            const respawnTimeMs = new Date(location.spawnTime).getTime() + respawnDurationMs;
+            const remainingMs = respawnTimeMs - new Date().getTime();
+
+            if (remainingMs > 0) {
+                const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+                const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                remainingTimeStr = `Zbývající čas: ${hours}h ${minutes}m ${seconds}s`;
+            } else {
+                remainingTimeStr = 'Spawn hotov!';
+            }
+        }
+        
+        const combinedTimerString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
+        timerElementList.innerHTML = combinedTimerString;
     }
 
-    // Odpočet
-    if (location.status === 'respawning' && location.spawnTime && location.respawnTimeInHours) {
-        const respawnDurationMs = location.respawnTimeInHours * 60 * 60 * 1000;
-        const respawnTimeMs = new Date(location.spawnTime).getTime() + respawnDurationMs;
-        const remainingMs = respawnTimeMs - new Date().getTime();
+    // Check if the popup element exists and update it
+    if (timerElementPopup) {
+        let lastUpdatedTimeStr = '';
+        let remainingTimeStr = '';
+        
+        // Uplynulý čas od poslední změny
+        if (location.lastUpdated) {
+            const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
+            const hours = Math.floor(timeSinceUpdate / 3600);
+            const minutes = Math.floor((timeSinceUpdate % 3600) / 60);
+            const seconds = Math.floor(timeSinceUpdate % 60);
+            lastUpdatedTimeStr = `Uplynulý čas: ${hours}h ${minutes}m ${seconds}s`;
+        }
+        
+        // Odpočet
+        if (location.status === 'respawning' && location.spawnTime && location.respawnTimeInHours) {
+            const respawnDurationMs = location.respawnTimeInHours * 60 * 60 * 1000;
+            const respawnTimeMs = new Date(location.spawnTime).getTime() + respawnDurationMs;
+            const remainingMs = respawnTimeMs - new Date().getTime();
 
-        if (remainingMs > 0) {
-            const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-            const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-            remainingTimeStr = `Zbývající čas: ${hours}h ${minutes}m ${seconds}s`;
-            markers[location._id]?.setIcon(respawningIcon);
-        } else {
-            remainingTimeStr = 'Spawn hotov!';
-            markers[location._id]?.setIcon(respawnReadyIcon);
+            if (remainingMs > 0) {
+                const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+                const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                remainingTimeStr = `Zbývající čas: ${hours}h ${minutes}m ${seconds}s`;
+            } else {
+                remainingTimeStr = 'Spawn hotov!';
+            }
         }
-    } else {
-        if (isRespawnReady(location)) {
-            markers[location._id]?.setIcon(respawnReadyIcon);
-        } else {
-            markers[location._id]?.setIcon(defaultIcon);
-        }
+        
+        const combinedTimerString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
+        timerElementPopup.innerHTML = combinedTimerString;
     }
-    
-    const combinedTimerString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
-    timerElementPopup.innerHTML = combinedTimerString;
-    timerElementList.innerHTML = combinedTimerString;
 }
+
 
 // Nová funkce pro aplikování filtrů
 function applyFilters() {

@@ -29,9 +29,6 @@ const respawningIcon = new L.Icon({
 });
 
 
-// Inicializace Socket.IO klienta
-const socket = io("https://ultima-online-map.onrender.com");
-
 // Inicializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
@@ -67,7 +64,7 @@ async function fetchLocations() {
 }
 
 // Funkce pro přidání nového místa
-function addNewLocation(latlng, type, name, respawnTimeInHours) {
+function addNewLocation(latlng, type, name) {
     const newLocation = {
         name: name || `Nové ${type}`,
         type: type,
@@ -437,12 +434,10 @@ function updateTimer(location) {
     const timerElementPopup = document.getElementById(`timer-${location._id}`);
     const timerElementList = document.getElementById(`time-list-${location._id}`);
     
-    if (!timerElementPopup && !timerElementList) return;
-
+    // Uplynulý čas od poslední změny
     let lastUpdatedTimeStr = '';
     let remainingTimeStr = '';
 
-    // Uplynulý čas od poslední změny
     if (location.lastUpdated) {
         const timeSinceUpdate = (new Date() - new Date(location.lastUpdated)) / 1000;
         const hours = Math.floor(timeSinceUpdate / 3600);
@@ -467,16 +462,19 @@ function updateTimer(location) {
         }
     }
     
+    // Zobrazení obou časů v pop-upu
     if (timerElementPopup) {
         const popupTimeString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
         timerElementPopup.innerHTML = popupTimeString;
     }
     
+    // Zobrazení obou časů v listu
     if (timerElementList) {
         const listTimeString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
         timerElementList.innerHTML = listTimeString;
     }
     
+    // Dynamická změna ikony markeoru
     if (location.status === 'respawning' && location.respawnTimeInHours) {
         if (isRespawnReady(location)) {
             markers[location._id]?.setIcon(respawnReadyIcon);
@@ -516,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addingMode = true;
         document.getElementById('add-location-btn').disabled = true;
         document.getElementById('instruction').style.display = 'block';
-        document.getElementById('type-selection-container-desktop').style.display = 'none';
+        document.getElementById('type-selection-container').style.display = 'none';
         map.getContainer().style.cursor = 'crosshair';
     });
 

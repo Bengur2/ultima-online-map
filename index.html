@@ -7,7 +7,6 @@
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -16,33 +15,18 @@
     <div class="container">
         <div id="map"></div>
 
-        <div class="mobile-controls">
-            <button id="add-location-btn-mobile" class="fab">+</button>
-            <button id="toggle-sidebar-btn" class="fab">☰</button>
-        </div>
-
         <div id="sidebar">
-            <div class="desktop-controls">
-                <button id="add-location-btn">Přidat místo</button>
-            </div>
-            
             <h2>Seznam míst</h2>
-            <div id="type-selection-container-desktop" style="display:none;">
-                <p>Vyber typ místa:</p>
-                <button class="type-btn" data-type="poklad">Poklad</button>
-                <button class="type-btn" data-type="spawn">Spawn</button>
-                <button class="type-btn" data-type="dungeon">Dungeon</button>
+            <div class="controls">
+                <button id="add-location-btn">Přidat místo</button>
+                <div id="type-selection-container" style="display:none;">
+                    <p>Vyber typ místa:</p>
+                    <button class="type-btn" data-type="poklad">Poklad</button>
+                    <button class="type-btn" data-type="spawn">Spawn</button>
+                    <button class="type-btn" data-type="dungeon">Dungeon</button>
+                </div>
+                <p id="instruction" style="display:none; color: gray;">Klikni do mapy pro přidání místa.</p>
             </div>
-            <p id="instruction-desktop" style="display:none; color: gray;">Klikni do mapy pro přidání místa.</p>
-
-            <div id="type-selection-container-mobile" style="display:none;">
-                <p>Vyber typ místa:</p>
-                <button class="type-btn-mobile" data-type="poklad">Poklad</button>
-                <button class="type-btn-mobile" data-type="spawn">Spawn</button>
-                <button class="type-btn-mobile" data-type="dungeon">Dungeon</button>
-            </div>
-            <p id="instruction-mobile" style="display:none; color: gray;">Klikni do mapy pro přidání místa.</p>
-
             <div class="filters">
                 <label>
                     <input type="checkbox" id="filter-poklad" value="poklad"> Poklady

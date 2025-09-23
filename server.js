@@ -4,88 +4,72 @@ const cors = require('cors');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync'); 
 const path = require('path');
-const { Server } = require("socket.io");
-const http = require('http');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
-  }
-});
-
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Důležité: Servírování statických souborů přímo z kořenového adresáře projektu
 app.use(express.static(__dirname));
 
+// Inicializace Lowdb
 const adapter = new FileSync('locations.json');
 const db = low(adapter);
 
 db.defaults({ locations: [] }).write();
 
-io.on('connection', (socket) => {
-  console.log('Nový uživatel se připojil:', socket.id);
-  socket.on('disconnect', () => {
-    console.log('Uživatel se odpojil:', socket.id);
-  });
-});
-
 app.get('/api/locations', (req, res) => {
-  const locations = db.get('locations').value();
-  res.json(locations);
+    const locations = db.get('locations').value();
+    res.json(locations);
 });
 
 app.post('/api/locations', (req, res) => {
-  const data = req.body;
-  if (!data.coords || typeof data.coords.lat !== 'number' || typeof data.coords.lng !== 'number') {
-    return res.status(400).json({ error: 'Neplatná data.' });
-  }
+    const data = req.body;
 
-  const newLocation = {
-    _id: String(Date.now()),
-    ...data,
-    lastUpdated: new Date()
-  };
+    if (!data.coords || typeof data.coords.lat !== 'number' || typeof data.coords.lng !== 'number') {
+        return res.status(400).json({ error: 'Neplatná data: Souřadnice jsou povinné a musí být čísla.' });
+    }
 
-  db.get('locations').push(newLocation).write();
-  
-  io.emit('location-updated');
-  res.json(newLocation);
+    const newLocation = {
+        _id: String(Date.now()),
+        ...data,
+        lastUpdated: new Date()
+    };
+
+    db.get('locations').push(newLocation).write();
+
+    res.json(newLocation);
 });
 
 app.put('/api/locations/:id', (req, res) => {
-  const locationId = req.params.id;
-  const newData = req.body;
+    const locationId = req.params.id;
+    const newData = req.body;
+    newData.lastUpdated = new Date();
 
-  const locationIndex = db.get('locations').value().findIndex(loc => loc._id === locationId);
-  if (locationIndex === -1) {
-    return res.status(404).json({ message: 'Místo nenalezeno.' });
-  }
+    const location = db.get('locations').find({ _id: locationId }).assign(newData).write();
 
-  db.get('locations').find({ _id: locationId }).assign(newData).write();
+    if (!location) {
+        return res.status(404).json({ message: 'Místo nenalezeno.' });
+    }
 
-  io.emit('location-updated');
-  res.json({ message: `Aktualizováno záznamů: 1` });
+    res.json({ message: `Aktualizováno záznamů: 1` });
 });
 
 app.delete('/api/locations/:id', (req, res) => {
-  const locationId = req.params.id;
+    const locationId = req.params.id;
 
-  const locationExists = db.get('locations').find({ _id: locationId }).value();
-  if (!locationExists) {
-    return res.status(404).json({ message: 'Místo nenalezeno.' });
-  }
+    const locationExists = db.get('locations').find({ _id: locationId }).value();
+    if (!locationExists) {
+        return res.status(404).json({ message: 'Místo nenalezeno.' });
+    }
 
-  db.get('locations').remove({ _id: locationId }).write();
+    db.get('locations').remove({ _id: locationId }).write();
 
-  io.emit('location-updated');
-  res.status(200).json({ message: 'Místo úspěšně smazáno.' });
+    res.status(200).json({ message: 'Místo úspěšně smazáno.' });
 });
 
-server.listen(port, () => {
-  console.log(`Server poslouchá na http://localhost:${port}`);
+app.listen(port, () => {
+    console.log(`Server poslouchá na http://localhost:${port}`);
 });

@@ -117,28 +117,15 @@ async function updateStatus(id, newStatus) {
         });
 
         if (response.ok) {
-            // Oprava: Používat stav z 'dataToUpdate' pro správnou synchronizaci
             location.status = dataToUpdate.status;
             location.lastUpdated = dataToUpdate.lastUpdated;
             location.spawnTime = dataToUpdate.spawnTime;
             updateLocationList();
             
             const marker = markers[location._id];
-            if (marker) {
-                // Okamžitá změna ikony markeoru
-                if (location.status === 'respawning' && !isRespawnReady(location)) {
-                     marker.setIcon(respawningIcon);
-                } else if (isRespawnReady(location)) {
-                    marker.setIcon(respawnReadyIcon);
-                } else {
-                    marker.setIcon(defaultIcon);
-                }
-                
-                if (marker.getPopup().isOpen()) {
-                    marker.getPopup().setContent(createPopupContent(location));
-                }
+            if (marker && marker.getPopup().isOpen()) {
+                marker.getPopup().setContent(createPopupContent(location));
             }
-
         } else {
             console.error('Chyba při aktualizaci stavu na serveru.');
         }
@@ -465,15 +452,12 @@ function updateTimer(location) {
             const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
             remainingTimeStr = `Zbývající čas: ${hours}h ${minutes}m ${seconds}s`;
-            // Přepnout na výchozí ikonu, pokud se odpočet ještě nezastavil
             markers[location._id]?.setIcon(respawningIcon);
         } else {
             remainingTimeStr = 'Spawn hotov!';
-            // Přepnout na zelenou ikonu
             markers[location._id]?.setIcon(respawnReadyIcon);
         }
     } else {
-        // Pokud není respawning, zkontrolujeme, zda by neměl být hotov
         if (isRespawnReady(location)) {
             markers[location._id]?.setIcon(respawnReadyIcon);
         } else {
@@ -481,7 +465,6 @@ function updateTimer(location) {
         }
     }
     
-    // Zobrazení obou časů
     const combinedTimerString = [lastUpdatedTimeStr, remainingTimeStr].filter(Boolean).join('<br>');
     timerElementPopup.innerHTML = combinedTimerString;
     timerElementList.innerHTML = combinedTimerString;

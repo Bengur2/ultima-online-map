@@ -29,9 +29,6 @@ const respawningIcon = new L.Icon({
 });
 
 
-// Inicializace Socket.IO klienta
-const socket = io("https://ultima-online-map.onrender.com");
-
 // Inicializace mapy a jejího nastavení
 function setupMap() {
     map = L.map('map', {
@@ -87,6 +84,8 @@ function addNewLocation(latlng, type, name, respawnTimeInHours) {
     .then(response => response.json())
     .then(savedLocation => {
         locations.push(savedLocation);
+        renderMarkers();
+        updateLocationList();
     })
     .catch(error => console.error('Chyba při ukládání nové značky:', error));
 }
@@ -123,6 +122,7 @@ async function updateStatus(id, newStatus) {
             location.status = dataToUpdate.status;
             location.lastUpdated = dataToUpdate.lastUpdated;
             location.spawnTime = dataToUpdate.spawnTime;
+            updateLocationList();
             
             const marker = markers[location._id];
             if (marker) {
@@ -160,6 +160,7 @@ async function deleteLocation(id) {
             locations = locations.filter(loc => loc._id !== id);
             map.removeLayer(markers[id]);
             delete markers[id];
+            updateLocationList();
         } else {
             console.error('Chyba při mazání místa na serveru.');
         }
@@ -200,6 +201,7 @@ async function editLocation(id) {
         if (response.ok) {
             location.name = newName;
             location.respawnTimeInHours = newRespawnTime;
+            updateLocationList();
             
             const marker = markers[location._id];
             if (marker && marker.getPopup().isOpen()) {
@@ -234,6 +236,7 @@ async function editLocationType(id, newType) {
 
         if (response.ok) {
             location.type = newType;
+            updateLocationList();
             
             const marker = markers[location._id];
             if (marker && marker.getPopup().isOpen()) {

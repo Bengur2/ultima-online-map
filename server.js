@@ -1,14 +1,14 @@
 // server.js
 const express = require('express');
 const cors = require('cors');
-const http = require('http'); 
-const { Low, JSONFile } = require('lowdb');
+const http = require('http'); // Nový import pro vytvoření HTTP serveru
+const { Low, JSONFile } = require('lowdb'); // Přejdeme zpět na asynchronní lowdb
 const path = require('path');
-const { Server } = require("socket.io");
+const { Server } = require("socket.io"); // Nový import pro Socket.IO
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
+const server = http.createServer(app); // Vytvoříme HTTP server
+const io = new Server(server, { // Vytvoříme Socket.IO server
   cors: {
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"]
@@ -19,7 +19,7 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..')));
+app.use(express.static(__dirname));
 
 const file = new JSONFile('/data/locations.json');
 const db = new Low(file);
@@ -32,6 +32,7 @@ async function initDb() {
 
 initDb();
 
+// WebSocket logika
 io.on('connection', (socket) => {
   console.log('Nový uživatel se připojil:', socket.id);
   socket.on('disconnect', () => {
@@ -59,7 +60,7 @@ app.post('/api/locations', async (req, res) => {
   db.data.locations.push(newLocation);
   await db.write();
   
-  io.emit('location-updated');
+  io.emit('location-updated'); // Oznámíme klientům, že došlo ke změně
   res.json(newLocation);
 });
 
